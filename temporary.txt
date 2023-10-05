@@ -1,0 +1,372 @@
+Đầu API còn thiếu:
+    Done
+
+Circular import trong Python là trường hợp khi hai hoặc nhiều module hoặc package import lẫn nhau một cách trực tiếp hoặc gián tiếp, tạo ra một vòng lặp vô hạn trong quá trình import
+
+Psycopg2 là một thư viện Python cung cấp cho chúng ta khả năng truy cập vào cơ sở dữ liệu PostgreSQL từ Python. 
+Trong khi đó, Flask là một framework web cho phép chúng ta xây dựng các ứng dụng web theo mô hình MVC (Model-View-Controller).
+Trong Flask, các models thường được sử dụng để ánh xạ dữ liệu từ ứng dụng vào cơ sở dữ liệu. 
+Tuy nhiên, khi sử dụng psycopg2 để truy cập vào cơ sở dữ liệu PostgreSQL, chúng ta không cần phải tạo models để ánh xạ dữ liệu.
+Điều này là bởi vì psycopg2 cho phép chúng ta thực hiện các truy vấn SQL trực tiếp từ Python, 
+mà không cần thông qua một ORM (Object-Relational Mapping) như SQLAlchemy hay Django ORM. Chúng ta có thể sử dụng các câu lệnh SQL như 
+SELECT, INSERT, UPDATE, DELETE để thực hiện các thao tác trên cơ sở dữ liệu.
+Tuy nhiên, nếu bạn muốn sử dụng ORM để ánh xạ dữ liệu vào cơ sở dữ liệu trong Flask, bạn vẫn có thể sử dụng SQLAlchemy hoặc một ORM khác 
+thay vì sử dụng psycopg2. Việc sử dụng ORM sẽ giúp cho việc quản lý cơ sở dữ liệu dễ dàng hơn và giảm thiểu các lỗi xảy ra do viết mã SQL không chính xác.
+
+mục đích chính của việc tạo model là định nghĩa cấu trúc của đối tượng dữ liệu và cung cấp các phương thức để tương tác với cơ sở dữ liệu, giúp cho mã của bạn dễ bảo trì hơn và giảm thiểu lỗi trong quá trình phát triển.
+
+0 [['Sinh Tố Bơ', 5, 'Nhỏ', None], ['Trà Sữa Thập Cẩm', 1, 'Nhỏ', 'TRÂN CHÂU TRẮNG']]
+1 [['Trà Sữa Thập Cẩm', 1, 'Vừa', 'THẠCH CỦ NĂNG'], ['Sinh Tố Bơ', 1, 'Lớn', 'KEM TRỨNG NƯỚNG']]
+
+{
+    "data":
+    [
+        {
+            "status": "Completed",
+            "address": "123/89 Võ Văn Ngân, TP Thủ Đức",
+            "orderdate": "Mon, 20 Feb 2023 17:44:01 GMT",
+            "totalprice": "200000",
+            "orderdetail": "Trà sữa thập cẩm(x2), Size L, Cafe sữa(X1), Size S, Topping: Trân Châu Trắng, Thạch dừa"
+        },
+        {
+            "status": "Cancelled",
+            "address": "97 Man Thiện, phường Hiệp Phú, thành phố Thủ Đức, thành phố Hồ Chí Minh",
+            "orderdate": "Wed, 15 Mar 2023 10:02:40 GMT",
+            "totalprice": "200000",
+            "orderdetail": "Trà sữa thập cẩm(x2), Size L, Cafe sữa(X1), Size S, Topping: Trân Châu Trắng, Thạch dừa"
+        },
+    ]
+}
+
+
+
+
+{
+    "order":
+    {
+        "totalprice": 100000,
+        "address": "97, Man Thiện, phường Hiệp Phú, thành phố Thủ Đức",
+        "phonenumber": "0383292556",
+        "note": "Ít đá, nhiều sữa."
+    },
+    "item":
+    [
+        {
+            "drinkid": 1,
+            "price": 55000,
+            "itemquantity": 2,
+            "sizeid": 1,
+            "toppingid": [1,2,3]
+        },
+        {
+            "drinkid": 2,
+            "price": 20000,
+            "itemquantity": 1,
+            "sizeid": 1,
+            "toppingid": []
+        }
+    ]
+}
+
+
+
+
+{
+    "order":
+    {
+        "orderid": 2
+        "totalprice": 100000,
+        "address": "97, Man Thiện, phường Hiệp Phú, thành phố Thủ Đức",
+        "phonenumber": "0383292556",
+        "note": "Ít đá, nhiều sữa."
+        "status": "Completed"
+    },
+    "item":
+    [
+        {
+            "drinkid": 1,
+            "price": 55000,
+            "itemquantity": 2,
+            "sizeid": 1,
+            "toppingid": [1,2,3]
+        },
+        {
+            "drinkid": 2,
+            "price": 20000,
+            "itemquantity": 1,
+            "sizeid": 1,
+            "toppingid": []
+        }
+    ]
+}
+
+
+
+
+
+{
+    "all-drink":
+    [
+        {
+            "category": "Sinh Tố",
+            "drinkid": 1,
+            "drinkimage": "https://cdn.beptruong.edu.vn/wp-content/uploads/2021/03/sinh-to-bo-dua.jpg",
+            "drinkname": "Sinh Tố Bơ",
+            "price": "$20,000.00",
+            "status": "Available"
+        },
+        {
+            "category": "Caffe",
+            "drinkid": 2,
+            "drinkimage": "https://123phache.com/wp-content/uploads/2020/02/ca_phe_sua_da-600x600-1.jpg",
+            "drinkname": "Caffe Sữa Đá",
+            "price": "$25,000.00",
+            "status": "Unvailable"
+        },
+        {
+            "category": "Trà Sữa",
+            "drinkid": 3,
+            "drinkimage": "https://channel.mediacdn.vn/thumb_w/640/428462621602512896/2022/10/27/photo-1-1666869235187680523516.jpg",
+            "drinkname": "Trà Sữa Thập Cẩm",
+            "price": "$20,000.00",
+            "status": "Available"
+        }
+    ]
+}
+
+
+# add item to the items table
+# add a record in items table when the user adds an item to the cart
+# after then I check the order table that a record has the status "Initialize"
+# add orderid and orderid on a itemorder table. 
+@app.route('/additemtocart', methods=['POST'])
+@jwt_required()
+def additemtocart():
+    # Check autherization
+    _userid = get_jwt_identity() #userid
+    # Get data request
+    _json = request.json
+    _drinkid = _json['drinkid']
+    _price = _json['price']
+    _itemquantity = _json['itemquantity']
+    _sizeid = _json['sizeid']
+    # INSERT ITEM TO THE ITEMS TABLE
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = """
+    INSERT INTO 
+        items(drinkid,price,itemquantity,sizeid)
+    VALUES(%s,%s,%s,%s)
+    RETURNING itemid
+    """
+    #itemid created auto so I get itemid
+    sql_where = (_drinkid,_price,_itemquantity,_sizeid)
+    cursor.execute(sql,sql_where)
+    row = cursor.fetchone()
+    _itemid = row[0]
+    conn.commit()
+    cursor.close()
+    # Check if record has "Initialized" status in the orders table
+    # if a record exists then I take orderid and then I add it with itemid to the itemorder table.
+    # if no record exists then I will create a record to the order table and and repeat the steps above
+    _orderid = check_status_initialize(_userid)
+    if _orderid:
+        add_itemorder(_orderid,_itemid)
+    else:
+        _orderid_new = create_status_initialize(_userid)
+        add_itemorder(_orderid_new,_itemid)
+    return jsonify({'message': 'Added to cart!'})
+
+
+
+def check_status_initialize(userid):
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        sql_check_initialize = """
+        SELECT orderid FROM users
+        INNER JOIN 
+            orders
+        ON
+            users.userid = orders.userid
+        WHERE status = 'Initialize' AND users.userid = '%s'
+        """
+        sql_where = (userid,)
+        cursor.execute(sql_check_initialize,sql_where)
+        row = cursor.fetchone()
+        cursor.close()
+        if row:
+            return row[0] # orderid
+        return 0 # NO
+    except:
+        resp = jsonify({"message":"Error check status initialize!"})
+        resp.status_code = 501
+        return resp
+
+def create_status_initialize(userid):
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # Get info default of user to add to orders table, user can change it.
+        sql_get_info_user = """
+        SELECT *,LOCALTIMESTAMP FROM users WHERE userid = '%s'
+        """
+        sql_where = (userid,)
+        cursor.execute(sql_get_info_user,sql_where)
+        row = cursor.fetchone()
+
+        address = row['address']
+        phonenumber = row['phonenumber']
+        status = 'Initialize'
+        orderdate = row['localtimestamp']
+
+        # insert user info data to orders table.
+        sql_create_status_initialize = """
+        INSERT INTO 
+            orders(userid,totalprice,address,phonenumber,status,orderdate)
+        VALUES(%s,%s,%s,%s,%s,%s)
+        RETURNING orderid
+        """
+        sql_where = (userid,0,address,phonenumber,status,orderdate)
+        cursor.execute(sql_create_status_initialize,sql_where)
+        row = cursor.fetchone()
+        _orderid = row[0]
+        conn.commit()
+        cursor.close()
+        return _orderid
+    except:
+        resp = jsonify({"message":"Unable to add data to orders table!"})
+        resp.status_code = 501
+        return resp
+
+
+def add_itemorder(_orderid,_itemid):
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        sql_add_itemorder = """
+        INSERT INTO 
+            itemorder(orderid,itemid)
+        VALUES(%s,%s)
+        """
+        sql_where = (_orderid,_itemid)
+        cursor.execute(sql_add_itemorder,sql_where)
+        conn.commit()
+        cursor.close()
+        return 0
+    except:
+        resp = jsonify({"message":"Unable to add data to itemorder table!"})
+        resp.status_code = 501
+        return resp
+
+
+# category filter
+@app.route('/drink/category/<int:id>', methods=['GET'])
+def category_filter(id):
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    sql = """
+    SELECT
+        d.drinkid, drinkname, drinkimage,
+        d.categoryid,categoryname, MIN(price), status
+    FROM drinks as d
+    INNER JOIN drinksize as ds
+        ON d.drinkid = ds.drinkid
+    INNER JOIN sizes as s
+        ON s.sizeid = ds.sizeid
+    INNER JOIN categories as c
+        ON c.categoryid = d.categoryid
+    WHERE d.categoryid = %s
+    GROUP BY d.drinkid,categoryname
+    ORDER BY d.drinkid
+    """
+    sql_where = (id,)
+    cursor.execute(sql,sql_where)
+    row = cursor.fetchall()
+    drinks = [{'drinkid': drink[0], 'drinkname': drink[1], 'drinkimage': drink[2],
+                'categoryid': drink[3],'categoryname':drink[4],'price':drink[5] ,'status': drink[6]} for drink in row]
+    cursor.close()
+    return jsonify(drinks=drinks)
+    
+
+
+
+## Get order infomation by order status like preparing, delivering, completed, cancelled.
+@app.route('/admin/orderstatus/<status>',methods=['GET'])
+@jwt_required()
+def getOrderInfoByPreparingStatus(status):
+    data = get_jwt()
+    rolename = data['rolename']
+
+    if rolename == 'admin':
+        if status in ['Preparing','Delivering','Completed','Cancelled']:
+
+            sql = """
+            SELECT * FROM orders
+            WHERE status = %s
+            """
+            sql_where = (status,)
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cursor.execute(sql,sql_where)
+            row = cursor.fetchall()
+            cursor.close()
+            orderInfo = [{"orderid":i["orderid"],"userid":i["userid"],"totalprice":i["totalprice"],
+                            "address":i["address"],"phonenumber":i["phonenumber"],"note":i["note"],
+                            "orderdate":i["orderdate"]} for i in row]
+            resp = jsonify(orderInfo=orderInfo)
+            resp.status_code = 200
+            return resp
+        else:
+            resp = jsonify({'message':"Parameter is not defined!"})
+            resp.status_code = 400
+            return resp
+    else:
+        resp = jsonify({'message':"Unauthorized - You are not authorized!!"})
+        resp.status_code = 401
+        return resp
+
+# add and change topping
+@app.route('/admin/topping',methods=['POST','PUT'])
+@jwt_required()
+def addAndChangeTopping():
+    info = get_jwt()
+    rolename = info['rolename']
+    if rolename == 'admin':
+        if request.method == 'POST':
+            _json = request.json
+            _nametopping = _json['nametopping']
+            _price = _json['price']
+
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            sql = """
+            INSERT INTO toppings(nametopping,price) VALUES(%s,%s)
+            """
+            sql_where = (_nametopping,_price)
+            cursor.execute(sql,sql_where)
+            conn.commit()
+            cursor.close()
+            resp = jsonify({"message":"Added topping!"})
+            resp.status_code = 200
+            return resp
+
+        elif request.method == 'PUT':
+            _json = request.json
+            _toppingid = _json['toppingid']
+            _nametopping = _json['nametopping']
+            _price = _json['price']
+            
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            sql = """
+            UPDATE toppings
+            SET nametopping = %s,
+                price = %s
+            WHERE toppingid = %s
+            """
+            sql_where = (_nametopping,_price,_toppingid)
+            cursor.execute(sql,sql_where)
+            conn.commit()
+            cursor.close()
+            resp = jsonify({"message":"Updated topping!"})
+            resp.status_code = 200
+            return resp 
+
+    else:
+        resp = jsonify({"message":"Unauthorized - You are not authorized!"})
+        resp.status_code = 401
+        return resp

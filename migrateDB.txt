@@ -1,0 +1,74 @@
+CREATE TABLE IF NOT EXISTS "users" (
+	"id" SERIAL PRIMARY KEY,
+	"email" text,
+	"password" text,
+	"full_name" text,
+	"role_id" integer,
+	"is_active" bool
+)
+
+CREATE TABLE IF NOT EXISTS "devices" (
+	"id" SERIAL PRIMARY KEY,
+	"device_name" text,
+	"user_id" text
+)
+
+CREATE TABLE IF NOT EXISTS "roles" (
+	"id" SERIAL PRIMARY KEY,
+	"role_name" text
+)
+
+ALTER TABLE "users"
+	ADD CONSTRAINT fk_users_role_id FOREIGN KEY(role_id) REFERENCES roles(id);
+	
+CREATE TABLE IF NOT EXISTS "parent_child_relationships" (
+	"id" SERIAL PRIMARY KEY,
+	"parent_id" integer,
+	"child_id" integer
+)
+
+CREATE TABLE IF NOT EXISTS "device_web_histories" (
+	"device_id" integer,
+	"web_history_id" integer
+)
+
+CREATE TABLE IF NOT EXISTS "web_histories" (
+	"id" SERIAL PRIMARY KEY,
+	"url" text,
+	"created_at" TIMESTAMP
+)
+
+ALTER TABLE "device_web_histories" 
+	ADD CONSTRAINT fk_dwh_device_id FOREIGN KEY (device_id) REFERENCES devices(id),
+	ADD CONSTRAINT fk_dwh_web_history_id FOREIGN KEY (web_history_id) REFERENCES web_histories(id);
+	
+CREATE TABLE IF NOT EXISTS "blocked_websites" (
+	"id" SERIAL PRIMARY KEY,
+	"url" text,
+	"block_by" integer,
+	"is_active" bool
+)
+
+CREATE TABLE IF NOT EXISTS "device_blocked_websites" (
+	"device_id" integer,
+	"block_website_id" integer
+)
+
+ALTER TABLE "device_blocked_websites" 
+	ADD CONSTRAINT fk_dbw_device_id FOREIGN KEY (device_id) REFERENCES devices(id),
+	ADD CONSTRAINT fk_dbw_block_website_id FOREIGN KEY (block_website_id) REFERENCES blocked_websites(id);
+	
+CREATE TABLE IF NOT EXISTS "keyboard_logs" (
+	"id" SERIAL PRIMARY KEY,
+	"key_stroke" text,
+	"created_at" TIMESTAMP
+)
+
+CREATE TABLE IF NOT EXISTS "device_keyboard_logs" (
+	"device_id" integer,
+	"keyboard_log_id" integer
+)
+
+ALTER TABLE "device_keyboard_logs"
+	ADD CONSTRAINT fk_dkl_device_id FOREIGN KEY (device_id) REFERENCES devices(id),
+	ADD CONSTRAINT fk_dkl_keyboard_log_id FOREIGN KEY (keyboard_log_id) REFERENCES keyboard_logs(id);
