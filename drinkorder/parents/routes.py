@@ -135,6 +135,59 @@ def registerForChild():
     cursor.close()
     return response_errors.Success()
 
+@parents.route("/v1/parents/child-info", methods=['GET'])
+@jwt_required()
+def getChildInfo():
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # get childIDs and get every childID info in table users
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s"
+    sql_where = (userID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+
+    childIDs = []
+    for row in rows:
+        childIDs.append(row[0])
+    
+    sql = "SELECT * FROM users WHERE id = ANY(%s)"
+    sql_where = (childIDs,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    cursor.close()
+    data = [{"id": row["id"], "fullName": row["full_name"], "email": row["email"], 
+             "password": row["password"], "status": row["status"]}for row in rows]
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
+    
+
+@parents.route("/v1/parents/web-history/<int:childID>/<int:days>", methods=['GET'])
+@jwt_required()
+def getWebHistory(childID, days):
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchone()
+    if rows == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    # get timestamp now and compare with create_at of table web_histories
+    return "skip"
+
 # Create a route to authenticate your users and return token.
 # @parents.route('/login', methods=['POST'])
 # def login():

@@ -43,15 +43,14 @@ def addDevice():
 def sendWebHistory():
     userID = get_jwt_identity()
     _json = request.json
+    _histories = _json["histories"]
     _deviceName = _json['deviceName']
-    _url = _json['url']
-    _createdAt = _json['createdAt']
 
     # validate userID and deviceName
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     sql = "SELECT id FROM devices WHERE user_id = %s AND device_name = %s"
     sql_where = (userID, _deviceName)
-    cursor.execute()
+    cursor.execute(sql, sql_where)
     row = cursor.fetchone()
 
     if row == None:
@@ -60,18 +59,19 @@ def sendWebHistory():
         return resp
 
     deviveID = row[0]
-    # convert _createdAt(webkit_timestamp|1/1/1601) to unix_timestamp (1/1/1970)
-    createdAt = ft.date_from_webkit(_createdAt)
-    # insert table web_histories
-    sql = "INSERT INTO web_histories(url,created_at) VALUES(%s,%s) RETURNING id"
-    sql_where = (_url, createdAt)
-    cursor.execute(sql, sql_where)
-    row = cursor.fetchone()
-    webHistoryID = row[0]
-    # insert table device_web_histories
-    sql = "INSERT INTO device_web_histories(device_id,web_history_id) VALUES(%s,%s)"
-    sql_where = (deviveID, webHistoryID)
-    cursor.execute(sql, sql_where)
+    for i in _histories:
+        # convert _createdAt(webkit_timestamp|1/1/1601) to unix_timestamp (1/1/1970)
+        createdAt = ft.date_from_webkit(i['createdAt'])
+        # insert table web_histories
+        sql = "INSERT INTO web_histories(url,created_at,total_visit) VALUES(%s,%s,%s) RETURNING id"
+        sql_where = (i['url'], createdAt,i['totalVisit'])
+        cursor.execute(sql, sql_where)
+        row = cursor.fetchone()
+        webHistoryID = row[0]
+        # insert table device_web_histories
+        sql = "INSERT INTO device_web_histories(device_id,web_history_id) VALUES(%s,%s)"
+        sql_where = (deviveID, webHistoryID)
+        cursor.execute(sql, sql_where)
     conn.commit()
     cursor.close()
     return response_errors.Success()

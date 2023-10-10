@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 CREATE TABLE IF NOT EXISTS "devices" (
 	"id" SERIAL PRIMARY KEY,
 	"device_name" text,
-	"user_id" text
+	"user_id" integer
 )
 
 CREATE TABLE IF NOT EXISTS "roles" (
