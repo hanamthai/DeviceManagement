@@ -1,4 +1,5 @@
-import datetime
+import datetime as dt
+from datetime import datetime
 import pytz
 
 def format_timestamp(timestamp):
@@ -24,6 +25,6 @@ def format_timestamp(timestamp):
     return formatted_str
 
 def date_from_webkit(webkit_timestamp):
-    epoch_start = datetime.datetime(1601,1,1)
-    delta = datetime.timedelta(microseconds=int(webkit_timestamp))
+    epoch_start = dt.datetime(1601,1,1)
+    delta = dt.timedelta(microseconds=int(webkit_timestamp))
     return epoch_start + delta

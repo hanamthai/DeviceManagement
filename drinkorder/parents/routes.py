@@ -1,6 +1,7 @@
 from flask import jsonify, request, session, url_for, Blueprint
 import bcrypt
 from flask_mail import Message
+from datetime import datetime, timedelta
 
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import get_jwt
@@ -14,6 +15,7 @@ from drinkorder import psycopg2
 from drinkorder import timedelta
 from drinkorder import constants
 from drinkorder import response_errors
+from drinkorder import format_timestamp as ft
 
 # create an instance of this Blueprint
 parents = Blueprint('parents','__name__')
@@ -185,8 +187,39 @@ def getWebHistory(childID, days):
         resp = jsonify({'message': "Not exist this child in your network!!"})
         resp.status_code = 400
         return resp
+    # get web_history_id
+    sql = """
+        SELECT dwh.web_history_id FROM devices d
+        INNER JOIN device_web_histories dwh
+        ON d.id = dwh.device_id
+        WHERE d.user_id = %s
+    """
+    sql_where = (childID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    webHistoryIDs = []
+    for row in rows:
+        webHistoryIDs.append(row[0])
+    print(type(webHistoryIDs))
     # get timestamp now and compare with create_at of table web_histories
-    return "skip"
+    now = datetime.now()
+    timeAfterDays = now - timedelta(days=days)
+    # get web_history base on conditions
+    sql = """
+        SELECT * FROM web_histories 
+        WHERE id = ANY(%s) AND created_at > %s
+        ORDER BY created_at DESC
+        """
+    sql_where = (webHistoryIDs,timeAfterDays)
+    cursor.execute(sql, sql_where)
+    rows = cursor.fetchall()
+    print(rows)
+    data = [{'id': i['id'], 'url': i['url'], 'total_visit': i['total_visit'],
+              'created_at': ft.format_timestamp(str(i['created_at']))} for i in rows]
+    cursor.close()
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
 
 # Create a route to authenticate your users and return token.
 # @parents.route('/login', methods=['POST'])
