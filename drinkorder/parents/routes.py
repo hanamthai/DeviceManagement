@@ -200,7 +200,6 @@ def getWebHistory(childID, days):
     webHistoryIDs = []
     for row in rows:
         webHistoryIDs.append(row[0])
-    print(type(webHistoryIDs))
     # get timestamp now and compare with create_at of table web_histories
     now = datetime.now()
     timeAfterDays = now - timedelta(days=days)
@@ -211,6 +210,57 @@ def getWebHistory(childID, days):
         ORDER BY created_at DESC
         """
     sql_where = (webHistoryIDs,timeAfterDays)
+    cursor.execute(sql, sql_where)
+    rows = cursor.fetchall()
+    print(rows)
+    data = [{'id': i['id'], 'url': i['url'], 'total_visit': i['total_visit'],
+              'created_at': ft.format_timestamp(str(i['created_at']))} for i in rows]
+    cursor.close()
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
+
+@parents.route("/v1/parents/top-visit-web/<int:childID>", methods=['GET'])
+@jwt_required()
+def topVisitWeb(childID):
+    #same with get web history
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchone()
+    if rows == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    # get web_history_id
+    sql = """
+        SELECT dwh.web_history_id FROM devices d
+        INNER JOIN device_web_histories dwh
+        ON d.id = dwh.device_id
+        WHERE d.user_id = %s
+    """
+    sql_where = (childID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    webHistoryIDs = []
+    for row in rows:
+        webHistoryIDs.append(row[0])
+    # get top visit web_history 
+    sql = """
+        SELECT * FROM web_histories 
+        WHERE id = ANY(%s)
+        ORDER BY total_visit DESC
+        LIMIT 20
+        """
+    sql_where = (webHistoryIDs,)
     cursor.execute(sql, sql_where)
     rows = cursor.fetchall()
     print(rows)
@@ -406,109 +456,109 @@ def getWebHistory(childID, days):
 #         return resp
 
 
-# # send email to reset password
-# def sendEmail(userid,_email):
-#     token = create_access_token(identity=userid,expires_delta=timedelta(minutes=5))
-#     html_content = f""" 
-#     <!DOCTYPE html>
-#     <html>
-#     <head>
-#         <link rel="stylesheet" type="text/css" hs-webfonts="true" href="https://fonts.googleapis.com/css?family=Lato|Lato:i,b,bi">
-#         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-#         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-#         <style type="text/css">
-#           h1{{font-size:56px}}
-#           p{{font-weight:100}}
-#           td{{vertical-align:top}}
-#           #email{{margin:auto;width:600px;background-color:#fff}}
-#         </style>
-#     </head>
-#     <body bgcolor="#F5F8FA" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
-#     <div id="email">
-#         <table role="presentation" width="100%">
-#             <tr>
-#                 <td bgcolor="#F6AC31" align="center" style="color: white;">
-#                     <h1> Ứng Dụng<br> Đặt Đồ Uống!</h1>
-#                 </td>
-#         </table>
-#         <table role="presentation" border="0" cellpadding="0" cellspacing="10px" style="padding: 30px 30px 30px 60px;">
-#             <tr>
-#                 <td>
-#                     <h2>
-#                         Để đặt lại mật khẩu trong ứng dụng đặt đồ uống online. Hãy nhấn vào link dưới đây:
-#                         <a href={url_for("parents.verifyTokenEmail",jwt=token,_external=True)}>
-#                             <br>Bấm vào đây!
-#                         </a>
-#                     </h2>
-#                     <p>
-#                         Nếu bạn không phải là người gửi yêu cầu đổi mật khẩu. Hãy bỏ qua mail thông báo này.
-#                     </p>
-#                 </td>
-#             </tr>
-#         </table>
-#     </div>
-#     </body>
-#     </html>
-#     """
-#     msg = Message('YÊU CẦU ĐẶT LẠI MẬT KHẨU', sender='noreply@gmail.com', recipients=[_email], html=html_content)
-#     mail.send(msg)
+# send email to reset password
+def sendEmail(userid,_email):
+    token = create_access_token(identity=userid,expires_delta=timedelta(minutes=5))
+    html_content = f""" 
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" type="text/css" hs-webfonts="true" href="https://fonts.googleapis.com/css?family=Lato|Lato:i,b,bi">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style type="text/css">
+          h1{{font-size:56px}}
+          p{{font-weight:100}}
+          td{{vertical-align:top}}
+          #email{{margin:auto;width:600px;background-color:#fff}}
+        </style>
+    </head>
+    <body bgcolor="#F5F8FA" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
+    <div id="email">
+        <table role="presentation" width="100%">
+            <tr>
+                <td bgcolor="#F6AC31" align="center" style="color: white;">
+                    <h1> Ứng Dụng<br> Đặt Đồ Uống!</h1>
+                </td>
+        </table>
+        <table role="presentation" border="0" cellpadding="0" cellspacing="10px" style="padding: 30px 30px 30px 60px;">
+            <tr>
+                <td>
+                    <h2>
+                        Để đặt lại mật khẩu trong ứng dụng đặt đồ uống online. Hãy nhấn vào link dưới đây:
+                        <a href={url_for("parents.verifyTokenEmail",jwt=token,_external=True)}>
+                            <br>Bấm vào đây!
+                        </a>
+                    </h2>
+                    <p>
+                        Nếu bạn không phải là người gửi yêu cầu đổi mật khẩu. Hãy bỏ qua mail thông báo này.
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+    </body>
+    </html>
+    """
+    msg = Message('YÊU CẦU ĐẶT LẠI MẬT KHẨU', sender='noreply@gmail.com', recipients=[_email], html=html_content)
+    mail.send(msg)
 
-# #{{HOST}}/resetPassword?email=<Your email>
-# @parents.route('/resetPassword',methods = ['POST'])
-# def resetPassword():
-#     _email = request.args.get('email')
+#{{HOST}}/v1/parents/resetPassword?email=<Your email>
+@parents.route('/v1/parents/resetPassword',methods = ['POST'])
+def resetPassword():
+    _email = request.args.get('email')
     
-#     # check email request has contained in the database
-#     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-#     sql_check_email = """
-#     SELECT userid FROM users
-#     WHERE email = %s
-#     """
-#     sql_where = (_email,)
-#     cursor.execute(sql_check_email,sql_where)
-#     row = cursor.fetchone()
-#     cursor.close()
+    # check email request has contained in the database
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql_check_email = """
+    SELECT id FROM users
+    WHERE email = %s
+    """
+    sql_where = (_email,)
+    cursor.execute(sql_check_email,sql_where)
+    row = cursor.fetchone()
+    cursor.close()
     
-#     if row:
-#         userid = row['userid']
-#         sendEmail(userid,_email)
-#         resp = jsonify({"message":"Hệ thống đã gửi cho bạn mail thông báo thay đổi mật khẩu. Hãy vào mail để kiểm tra!"})
-#         resp.status_code = 200
-#         return resp
-#     else:
-#         resp = jsonify({"message":"Not Found - Email doesn't exists in system!"})
-#         resp.status_code = 404
-#         return resp
+    if row == None:
+        resp = jsonify({"message":"Not Found - Email doesn't exists in system!"})
+        resp.status_code = 404
+        return resp
+    userID = row['id']
+    sendEmail(userID,_email)
+    resp = jsonify({"message":"Hệ thống đã gửi cho bạn mail thông báo thay đổi mật khẩu. Hãy vào mail để kiểm tra!"})
+    resp.status_code = 200
+    return resp
+        
 
 
 
-# #{{HOST}}/resetPassword/token?jwt=<Your token>
-# @parents.route('/resetPassword/token',methods=['PUT','GET'])
-# @jwt_required(locations="query_string")
-# def verifyTokenEmail():
-#     userid = get_jwt_identity()
-#     if userid:
-#         # hash password '123'
-#         _password = '123'
-#         hashed = bcrypt.hashpw(_password.encode('utf-8'), bcrypt.gensalt())
-#         _password_hash = hashed.decode('utf-8')
+#{{HOST}}/resetPassword/token?jwt=<Your token>
+@parents.route('/resetPassword/token',methods=['PUT','GET'])
+@jwt_required(locations="query_string")
+def verifyTokenEmail():
+    userid = get_jwt_identity()
+    if userid:
+        # hash password '123'
+        _password = '123'
+        hashed = bcrypt.hashpw(_password.encode('utf-8'), bcrypt.gensalt())
+        _password_hash = hashed.decode('utf-8')
 
-#         # update password into database
-#         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-#         sql_change_password_default = """
-#         UPDATE users
-#         SET password = %s
-#         WHERE userid = %s
-#         """
-#         sql_where = (_password_hash,userid)
-#         cursor.execute(sql_change_password_default,sql_where)
-#         conn.commit()
-#         cursor.close()
+        # update password into database
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        sql_change_password_default = """
+        UPDATE users
+        SET password = %s
+        WHERE userid = %s
+        """
+        sql_where = (_password_hash,userid)
+        cursor.execute(sql_change_password_default,sql_where)
+        conn.commit()
+        cursor.close()
 
-#         resp = jsonify({"message":"Your password changed to '123'!!!"})
-#         resp.status_code = 200
-#         return resp
-#     else:
-#         resp = jsonify({"message":"Not Found - Account doesn't exists"})
-#         resp.status_code = 404
-#         return resp
+        resp = jsonify({"message":"Your password changed to '123'!!!"})
+        resp.status_code = 200
+        return resp
+    else:
+        resp = jsonify({"message":"Not Found - Account doesn't exists"})
+        resp.status_code = 404
+        return resp
