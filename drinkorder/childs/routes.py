@@ -58,7 +58,7 @@ def sendWebHistory():
         resp.status_code = 400
         return resp
 
-    deviveID = row[0]
+    deviceID = row[0]
     for i in _histories:
         # convert _createdAt(webkit_timestamp|1/1/1601) to unix_timestamp (1/1/1970)
         createdAt = ft.date_from_webkit(i['createdAt'])
@@ -70,12 +70,51 @@ def sendWebHistory():
         webHistoryID = row[0]
         # insert table device_web_histories
         sql = "INSERT INTO device_web_histories(device_id,web_history_id) VALUES(%s,%s)"
-        sql_where = (deviveID, webHistoryID)
+        sql_where = (deviceID, webHistoryID)
         cursor.execute(sql, sql_where)
     conn.commit()
     cursor.close()
     return response_errors.Success()
 
+@childs.route('/v1/childs/block-website', methods=['GET'])
+@jwt_required()
+def getBlockedWebsite():
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    _json = request.json
+    _deviceName = _json["deviceName"]
+
+    if roleName != constants.RoleNameChild:
+        return response_errors.NotAuthenticateChild()
+
+    # get deviceID
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id FROM devices WHERE user_id = %s AND device_name = %s"
+    sql_where = (userID, _deviceName)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+
+    if row == None:
+        resp = jsonify({'message': "Your device doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+
+    deviceID = row[0]
+    sql = """
+        SELECT bw.id, bw.url, bw.block_by FROM device_blocked_websites dbw
+        INNER JOIN blocked_websites bw
+        ON dbw.block_website_id = bw.id
+        WHERE dbw.device_id = %s AND bw.is_active = %s
+    """
+    sql_where = (deviceID,True)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by']} for i in rows]
+    cursor.close()
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
 
 
 

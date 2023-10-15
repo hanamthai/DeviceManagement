@@ -212,7 +212,6 @@ def getWebHistory(childID, days):
     sql_where = (webHistoryIDs,timeAfterDays)
     cursor.execute(sql, sql_where)
     rows = cursor.fetchall()
-    print(rows)
     data = [{'id': i['id'], 'url': i['url'], 'total_visit': i['total_visit'],
               'created_at': ft.format_timestamp(str(i['created_at']))} for i in rows]
     cursor.close()
@@ -270,6 +269,156 @@ def topVisitWeb(childID):
     resp = jsonify(data=data)
     resp.status_code = 200
     return resp
+
+@parents.route("/v1/parents/keyboard-log/<int:childID>/<int:days>", methods=['GET'])
+@jwt_required()
+def getKeyboardLog(childID, days):
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchone()
+    if rows == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    # get keyboard_log_id
+    sql = """
+        SELECT dkl.keyboard_log_id FROM devices d
+        INNER JOIN device_keyboard_logs dkl
+        ON d.id = dkl.device_id
+        WHERE d.user_id = %s
+    """
+    sql_where = (childID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    keyboardLogIDs = []
+    for row in rows:
+        keyboardLogIDs.append(row[0])
+    # get timestamp now and compare with create_at of table keyboard_logs
+    now = datetime.now()
+    timeAfterDays = now - timedelta(days=days)
+    # get web_history base on conditions
+    sql = """
+        SELECT * FROM keyboard_logs 
+        WHERE id = ANY(%s) AND created_at > %s
+        ORDER BY created_at DESC
+        """
+    sql_where = (keyboardLogIDs,timeAfterDays)
+    cursor.execute(sql, sql_where)
+    rows = cursor.fetchall()
+    data = [{'id': i['id'], 'key_stroke': i['key_stroke'], 'total_visit': i['total_visit'],
+              'created_at': ft.format_timestamp(str(i['created_at']))} for i in rows]
+    cursor.close()
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
+
+@parents.route("/v1/parents/top-keyboard-log/<int:childID>", methods=['GET'])
+@jwt_required()
+def topKeyboardLog(childID):
+    #same with get keyboard log
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchone()
+    if rows == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    # get keyboard_log_id
+    sql = """
+        SELECT dkl.keyboard_log_id FROM devices d
+        INNER JOIN device_keyboard_logs dkl
+        ON d.id = dkl.device_id
+        WHERE d.user_id = %s
+    """
+    sql_where = (childID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    keyboardLogIDs = []
+    for row in rows:
+        keyboardLogIDs.append(row[0])
+    # get top keyboard_log 
+    sql = """
+        SELECT * FROM keyboard_logs 
+        WHERE id = ANY(%s)
+        ORDER BY total_visit DESC
+        LIMIT 20
+        """
+    sql_where = (keyboardLogIDs,)
+    cursor.execute(sql, sql_where)
+    rows = cursor.fetchall()
+    print(rows)
+    data = [{'id': i['id'], 'key_stroke': i['key_stroke'], 'total_visit': i['total_visit'],
+              'created_at': ft.format_timestamp(str(i['created_at']))} for i in rows]
+    cursor.close()
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
+
+# 1 child have many device so i have to add blocked website in all this device
+@parents.route('/v1/parents/block-website', methods=['POST'])
+@jwt_required()
+def sendBlockedWebsite():
+    userID = get_jwt_identity()
+    _json = request.json
+    _blockedWebsites = _json["blockedWebsites"]
+    _childID = _json['childID']
+
+    # validate parent(userID) has contain childID
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, _childID)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+    if row == None:
+        resp = jsonify({'message': "You're not manage this child!!"})
+        resp.status_code = 400
+        return resp
+    
+    # find devices of child
+    sql = """
+        SELECT devices.id FROM users
+        INNER JOIN devices
+        ON devices.user_id = users.id
+        WHERE users.id = %s
+        """
+    sql_where = (_childID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    # add block website in all device of child
+    for row in rows:
+        deviceID = row['id']
+        for i in _blockedWebsites:
+            # insert table blocked_websites
+            sql = "INSERT INTO blocked_websites(url,block_by,is_active) VALUES(%s,%s,%s) RETURNING id"
+            sql_where = (i['url'],userID,True)
+            cursor.execute(sql, sql_where)
+            row = cursor.fetchone()
+            blockWebsiteID = row[0]
+            # insert table device_blocked_websites
+            sql = "INSERT INTO device_blocked_websites(device_id,block_website_id) VALUES(%s,%s)"
+            sql_where = (deviceID, blockWebsiteID)
+            cursor.execute(sql, sql_where)
+    conn.commit()
+    cursor.close()
+    return response_errors.Success()
 
 # Create a route to authenticate your users and return token.
 # @parents.route('/login', methods=['POST'])
