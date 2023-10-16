@@ -1,15 +1,15 @@
 from flask import jsonify, request, session, Blueprint
 import bcrypt
-from drinkorder import conn
-from drinkorder import psycopg2
+from devicemanage import conn
+from devicemanage import psycopg2
 
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt
-from drinkorder import format_timestamp as ft
-from drinkorder import constants
-from drinkorder import response_errors
+from devicemanage import format_timestamp as ft
+from devicemanage import constants
+from devicemanage import response_errors
 
 # create an instance of this Blueprint
 admins = Blueprint('admins','__name__')

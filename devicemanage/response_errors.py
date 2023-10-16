@@ -24,3 +24,8 @@ def EmailExists():
     resp = jsonify({'message': 'Bad Request - Your email already exists!'})
     resp.status_code = 400
     return resp
+
+def NotData():
+    resp = jsonify(data=[])
+    resp.status_code = 200
+    return resp

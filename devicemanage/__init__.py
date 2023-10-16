@@ -56,9 +56,9 @@ conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER,
                         password=DB_PASS, host=DB_HOST)
 
 # Avoid circular import
-from drinkorder.childs.routes import childs
-from drinkorder.admins.routes import admins
-from drinkorder.parents.routes import parents
+from devicemanage.childs.routes import childs
+from devicemanage.admins.routes import admins
+from devicemanage.parents.routes import parents
 
 app.register_blueprint(childs)
 app.register_blueprint(admins)

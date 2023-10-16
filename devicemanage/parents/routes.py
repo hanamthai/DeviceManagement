@@ -9,13 +9,13 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_refresh_token
 from flask_jwt_extended import jwt_required
 
-from drinkorder import mail
-from drinkorder import conn
-from drinkorder import psycopg2
-from drinkorder import timedelta
-from drinkorder import constants
-from drinkorder import response_errors
-from drinkorder import format_timestamp as ft
+from devicemanage import mail
+from devicemanage import conn
+from devicemanage import psycopg2
+from devicemanage import timedelta
+from devicemanage import constants
+from devicemanage import response_errors
+from devicemanage import format_timestamp as ft
 
 # create an instance of this Blueprint
 parents = Blueprint('parents','__name__')
@@ -152,25 +152,40 @@ def getChildInfo():
     cursor.execute(sql,sql_where)
     rows = cursor.fetchall()
 
+    if rows == []:
+        return response_errors.NotData()
+
     childIDs = []
     for row in rows:
         childIDs.append(row[0])
     
-    sql = "SELECT * FROM users WHERE id = ANY(%s)"
-    sql_where = (childIDs,)
-    cursor.execute(sql,sql_where)
-    rows = cursor.fetchall()
+    output = []
+    for childID in childIDs:
+        # get user info and devices of them
+        sql = "SELECT * FROM users WHERE id = %s"
+        sql_where = (childID,)
+        cursor.execute(sql,sql_where)
+        row = cursor.fetchone()
+        data = {"id": row["id"], "fullName": row["full_name"], "email": row["email"], 
+                "password": row["password"], "status": row["status"]}
+        # get devices
+        sql = "SELECT * from devices WHERE user_id = %s"
+        sql_where = (childID,)
+        cursor.execute(sql,sql_where)
+        rows = cursor.fetchall()
+        devices = [{'id': i['id'], 'deviceName': i['device_name']} for i in rows]
+        data['devices'] = devices
+        output.append(data)
+
     cursor.close()
-    data = [{"id": row["id"], "fullName": row["full_name"], "email": row["email"], 
-             "password": row["password"], "status": row["status"]}for row in rows]
-    resp = jsonify(data=data)
+    resp = jsonify(data=output)
     resp.status_code = 200
     return resp
     
 
-@parents.route("/v1/parents/web-history/<int:childID>/<int:days>", methods=['GET'])
+@parents.route("/v1/parents/web-history/<int:childID>/<int:deviceID>/<int:days>", methods=['GET'])
 @jwt_required()
-def getWebHistory(childID, days):
+def getWebHistory(childID, deviceID, days):
     userID = get_jwt_identity()
     header = get_jwt()
     roleName = header['role_name']
@@ -192,11 +207,15 @@ def getWebHistory(childID, days):
         SELECT dwh.web_history_id FROM devices d
         INNER JOIN device_web_histories dwh
         ON d.id = dwh.device_id
-        WHERE d.user_id = %s
+        WHERE d.user_id = %s AND d.id = %s
     """
-    sql_where = (childID,)
+    sql_where = (childID, deviceID)
     cursor.execute(sql,sql_where)
     rows = cursor.fetchall()
+
+    if rows == []:
+        return response_errors.NotData()
+
     webHistoryIDs = []
     for row in rows:
         webHistoryIDs.append(row[0])
@@ -270,9 +289,9 @@ def topVisitWeb(childID):
     resp.status_code = 200
     return resp
 
-@parents.route("/v1/parents/keyboard-log/<int:childID>/<int:days>", methods=['GET'])
+@parents.route("/v1/parents/keyboard-log/<int:childID>/<int:deviceID>/<int:days>", methods=['GET'])
 @jwt_required()
-def getKeyboardLog(childID, days):
+def getKeyboardLog(childID, deviceID, days):
     userID = get_jwt_identity()
     header = get_jwt()
     roleName = header['role_name']
@@ -283,8 +302,8 @@ def getKeyboardLog(childID, days):
     sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
     sql_where = (userID, childID)
     cursor.execute(sql,sql_where)
-    rows = cursor.fetchone()
-    if rows == None:
+    row = cursor.fetchone()
+    if row == None:
         cursor.close()
         resp = jsonify({'message': "Not exist this child in your network!!"})
         resp.status_code = 400
@@ -294,11 +313,15 @@ def getKeyboardLog(childID, days):
         SELECT dkl.keyboard_log_id FROM devices d
         INNER JOIN device_keyboard_logs dkl
         ON d.id = dkl.device_id
-        WHERE d.user_id = %s
+        WHERE d.user_id = %s AND d.id = %s
     """
-    sql_where = (childID,)
+    sql_where = (childID, deviceID)
     cursor.execute(sql,sql_where)
     rows = cursor.fetchall()
+
+    if rows == []:
+        return response_errors.NotData()
+
     keyboardLogIDs = []
     for row in rows:
         keyboardLogIDs.append(row[0])
@@ -377,6 +400,11 @@ def topKeyboardLog(childID):
 @jwt_required()
 def sendBlockedWebsite():
     userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    
     _json = request.json
     _blockedWebsites = _json["blockedWebsites"]
     _childID = _json['childID']
@@ -419,6 +447,58 @@ def sendBlockedWebsite():
     conn.commit()
     cursor.close()
     return response_errors.Success()
+
+@parents.route('/v1/parents/block-website/<int:childID>', methods=['GET'])
+@jwt_required()
+def getBlockWebsite(childID):
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchone()
+    if rows == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    
+    # get deviceIDs of child
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id, device_name FROM devices WHERE user_id = %s"
+    sql_where = (childID,)
+    cursor.execute(sql, sql_where)
+    rows = cursor.fetchall()
+
+    if rows == []:
+        resp = jsonify({'message': "Your child device doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+    
+    output = dict()
+    for row in rows:
+        deviceID = row['id']
+        deviceName = row['device_name']
+        sql = """
+            SELECT bw.id, bw.url, bw.block_by, bw.is_active FROM device_blocked_websites dbw
+            INNER JOIN blocked_websites bw
+            ON dbw.block_website_id = bw.id
+            WHERE dbw.device_id = %s
+        """
+        sql_where = (deviceID,)
+        cursor.execute(sql,sql_where)
+        rows = cursor.fetchall()
+        data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by'], 'isActive': i['is_active']} for i in rows]
+        output[deviceName] = data
+    resp = jsonify(data=output)
+    cursor.close()
+    resp.status_code = 200
+    return resp
 
 # Create a route to authenticate your users and return token.
 # @parents.route('/login', methods=['POST'])

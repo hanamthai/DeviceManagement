@@ -2,7 +2,7 @@
 # "orderdrink_api_flask_env\Scripts\deactivate" to deactivate enviroments of packet
 # app.py
 import os
-from drinkorder import app
+from devicemanage import app
 
 if __name__ == "__main__":
     app.run(
