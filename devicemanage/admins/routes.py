@@ -30,7 +30,7 @@ def login():
 
         sql = """
         SELECT 
-            id,email,password,role_id,status
+            users.id,users.email,users.password,users.role_id,users.status
         FROM 
             users 
         WHERE 
