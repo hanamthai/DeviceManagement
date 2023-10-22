@@ -35,7 +35,8 @@ jobs:
         run: |
           rsync --checksum -r \
             * \
-            drinkorder \
+            devicemanage \
+            template \
             hanamthai_admin@ssh-hanamthai.alwaysdata.net:/home/hanamthai/service/devicemanage
 
       - name: Request Alwaysdata restart server
