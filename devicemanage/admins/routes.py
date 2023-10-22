@@ -87,6 +87,24 @@ def getRoleName(role_id):
     else:
         return row["role_name"]
 
+@admins.route('/v1/user-profile', methods=['GET'])
+@jwt_required()
+def getUserInfo():
+    userID = get_jwt_identity()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT * FROM users WHERE id = %s"
+    sql_where = (userID,)
+    cursor.execute(sql,sql_where)
+    row = cursor.fetchone()
+    if row == None:
+        resp = jsonify({'message':'User not found!!'})
+        resp.status_code = 400
+        return resp
+    data = {'id':row['id'],'email':row['email'],'fullName':row['full_name'],'roleID':row['role_id'],'status':row['status']}
+    resp = jsonify(data=data)
+    resp.status_code = 200
+    return resp
+
 @admins.route("/v1/admins/create-role", methods=['POST'])
 @jwt_required()
 def createRole():

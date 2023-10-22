@@ -27,4 +27,4 @@ def format_timestamp(timestamp):
 def date_from_webkit(webkit_timestamp):
     epoch_start = dt.datetime(1601,1,1)
     delta = dt.timedelta(microseconds=int(webkit_timestamp))
-    return epoch_start + delta
+    return epoch_start + delta + dt.timedelta(hours=7)
