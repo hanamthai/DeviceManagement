@@ -537,7 +537,7 @@ def blockUser(childID):
     cursor.close()
     return response_errors.Success()
 
-@parents.route('/v1/parents/edit-child/<int:childID>', methods=['PUT'])
+@parents.route('/v1/parents/edit-child/<int:childID>', methods=['POST'])
 @jwt_required()
 def editChildInfo(childID):
     data = get_jwt()
