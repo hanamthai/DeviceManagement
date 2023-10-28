@@ -526,6 +526,7 @@ def blockUser(childID):
     cursor.execute(sql,sql_where)
     row = cursor.fetchone()
     if row == None:
+        cursor.close()
         return response_errors.UserNotExists()
     switchStatus = constants.SwitchStatus[row['status']]
     # Change status
@@ -536,6 +537,56 @@ def blockUser(childID):
     cursor.close()
     return response_errors.Success()
 
+@parents.route('/v1/parents/edit-child/<int:childID>', methods=['PUT'])
+@jwt_required()
+def editChildInfo(childID):
+    data = get_jwt()
+    roleName = data['role_name']
+    parentID = get_jwt_identity()
+
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    
+    _json = request.json
+    _fullName = _json['fullName']
+    _password = _json['password']
+    
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    # check if id is child of parent
+    sql = "select child_id from parent_child_relationships where parent_id = %s"
+    sql_where = (parentID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    childIDs = [row[0] for row in rows]
+    if not (childID in childIDs):
+        return response_errors.UserNotExists()
+    # handle have param password and without password
+    if _password == "":
+        # without password
+        sql = """
+            UPDATE users
+            SET full_name = %s
+            WHERE id = %s
+        """
+        sql_where = (_fullName,childID)
+        cursor.execute(sql,sql_where)
+        conn.commit()
+        cursor.close()
+        return response_errors.Success()   
+    # with password
+    # hash password
+    hashed = bcrypt.hashpw(_password.encode('utf-8'),bcrypt.gensalt())
+    _newPassword = hashed.decode('utf-8')
+    sql = """
+        UPDATE users
+        SET full_name = %s, password = %s
+        WHERE id = %s
+    """
+    sql_where = (_fullName, _newPassword, childID)
+    cursor.execute(sql,sql_where)
+    conn.commit()
+    cursor.close()
+    return response_errors.Success()
 
 # Create a route to authenticate your users and return token.
 # @parents.route('/login', methods=['POST'])
