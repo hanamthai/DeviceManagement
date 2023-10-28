@@ -29,3 +29,8 @@ def NotData():
     resp = jsonify(data=[])
     resp.status_code = 200
     return resp
+
+def UserNotExists():
+    resp = jsonify({"message": "user not exists in system!!"})
+    resp.status_code = 400
+    return resp

@@ -168,6 +168,8 @@ def blockUser(userID):
     sql_where = (userID,)
     cursor.execute(sql,sql_where)
     row = cursor.fetchone()
+    if row == None:
+        return response_errors.UserNotExists()
     switchStatus = constants.SwitchStatus[row['status']]
     # Change status
     sql = "UPDATE users SET status = %s WHERE id = %s"
