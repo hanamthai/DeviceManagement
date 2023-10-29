@@ -30,7 +30,7 @@ def login():
 
         sql = """
         SELECT 
-            users.id,users.email,users.password,users.role_id,users.status
+            users.id,users.full_name,users.email,users.password,users.role_id,users.status
         FROM 
             users 
         WHERE 
@@ -45,6 +45,7 @@ def login():
             id = row['id']
             roleID = row['role_id']
             status = row['status']
+            fullname = row['full_name']
             if status == constants.StatusInactive:
                 resp = jsonify({"message":"Locked - Your account is locked! You can contact with our employee to know reason!"})
                 resp.status_code = 423
@@ -59,7 +60,7 @@ def login():
                 additional_claims = {"role_id": roleID, "role_name": roleName}
                 access_token = create_access_token(identity=id,additional_claims=additional_claims)
                 session['access_token'] = access_token
-                resp = jsonify(access_token=access_token)
+                resp = jsonify(access_token=access_token,full_name=fullname,role_id=roleID)
                 resp.status_code = 200
                 return resp
             else:
