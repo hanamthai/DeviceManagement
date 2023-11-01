@@ -180,14 +180,14 @@ def blockUser(userID):
     cursor.close()
     return response_errors.Success()
 
-@admins.route('/v1/admins/change-password/<int:userID>',methods=['PUT'])
+@admins.route('/v1/admins/change-info/<int:userID>',methods=['POST'])
 @jwt_required()
 def changePassword(userID):
     header = get_jwt()
     roleName = header['role_name']
 
     if roleName != constants.RoleNameAdmin:
-        return response_errors.NotAuthenticateAdmin
+        return response_errors.NotAuthenticateAdmin()
     
     # validate user
     cursor = conn.cursor(cursor_factory= psycopg2.extras.DictCursor)
@@ -196,43 +196,39 @@ def changePassword(userID):
     cursor.execute(sql_check_user_exists, sql_where)
     row = cursor.fetchone()
     if row == None:
-        resp = jsonify({'message': "This account doesn't exists in system!!"})
-        resp.status_code = 400
-        return resp
+        return response_errors.UserNotExists()
 
     _json = request.json
-    _oldPassword = _json['oldPassword']
-    _newPassword = _json['newPassword']
-    # Confirm old password
-    sql_get_password = """
-    SELECT password FROM users
-    WHERE id = %s
-    """
-    sql_where = (userID,)
-    cursor.execute(sql_get_password,sql_where)
-    row = cursor.fetchone()
-    password_hash = row[0]
-    if bcrypt.checkpw(_oldPassword.encode('utf-8'),password_hash.encode('utf-8')):
-        # hash password
-        hashed = bcrypt.hashpw(_newPassword.encode('utf-8'),bcrypt.gensalt())
-        _newPassword = hashed.decode('utf-8')
-        
-        sql_change_password = """
-        UPDATE users
-        SET password = %s
-        WHERE id = %s
+    _fullName = _json['fullName']
+    _password = _json['password']
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    # handle have param password and without password
+    if _password == "":
+        # without password
+        sql = """
+            UPDATE users
+            SET full_name = %s
+            WHERE id = %s
         """
-        sql_where = (_newPassword,userID)
-        cursor.execute(sql_change_password,sql_where)
+        sql_where = (_fullName,userID)
+        cursor.execute(sql,sql_where)
         conn.commit()
         cursor.close()
-        resp = jsonify({"message":"Your password changed !!!"})
-        resp.status = 200
-        return resp
-    else:
-        resp = jsonify({"message":"Bad Request - Your old password is wrong"})
-        resp.status_code = 400
-        return resp
+        return response_errors.Success()   
+    # with password
+    # hash password
+    hashed = bcrypt.hashpw(_password.encode('utf-8'),bcrypt.gensalt())
+    _newPassword = hashed.decode('utf-8')
+    sql = """
+        UPDATE users
+        SET full_name = %s, password = %s
+        WHERE id = %s
+    """
+    sql_where = (_fullName, _newPassword, userID)
+    cursor.execute(sql,sql_where)
+    conn.commit()
+    cursor.close()
+    return response_errors.Success()
 
 # ## admin updates order status to 'Delivering'
 # @admins.route('/admin/order/update/<int:orderid>',methods=['PUT'])
