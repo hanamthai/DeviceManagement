@@ -28,3 +28,15 @@ def date_from_webkit(webkit_timestamp):
     epoch_start = dt.datetime(1601,1,1)
     delta = dt.timedelta(microseconds=int(webkit_timestamp))
     return epoch_start + delta + dt.timedelta(hours=7)
+
+def datetime_to_webkit_timestamp(datatime):
+    # Define the WebKit epoch as a datetime object
+    webkit_epoch = dt.datetime(1601, 1, 1, 0, 0, 0, 0)
+
+    # Calculate the time difference between the input datetime and the WebKit epoch
+    time_difference = datatime - webkit_epoch
+
+    # Convert the time difference to microseconds
+    webkit_timestamp = time_difference.total_seconds() * 1_000_000
+
+    return int(webkit_timestamp)

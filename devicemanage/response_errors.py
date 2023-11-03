@@ -34,3 +34,8 @@ def UserNotExists():
     resp = jsonify({"message": "user not exists in system!!"})
     resp.status_code = 400
     return resp
+
+def DeviceNotExists():
+    resp = jsonify({'message': "Your device doesn't exists in system!!"})
+    resp.status_code = 400
+    return resp
