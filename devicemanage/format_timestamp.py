@@ -36,6 +36,9 @@ def datetime_to_webkit_timestamp(datatime):
     # Calculate the time difference between the input datetime and the WebKit epoch
     time_difference = datatime - webkit_epoch
 
+    # Subtract 7 hours (7 * 3600 seconds) from the time difference
+    time_difference -= dt.timedelta(seconds=7 * 3600)
+
     # Convert the time difference to microseconds
     webkit_timestamp = time_difference.total_seconds() * 1_000_000
 
