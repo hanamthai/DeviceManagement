@@ -175,9 +175,9 @@ def getBlockedWebsite():
     return resp
 
 # get timestamp of chrome to compare with time in history
-@childs.route('/v1/childs/web-history/latest-time/<int:deviceID>', methods=['GET'])
+@childs.route('/v1/childs/web-history/latest-time/<string:deviceName>', methods=['GET'])
 @jwt_required()
-def getTimestampLatestHistoryWeb(deviceID):
+def getTimestampLatestHistoryWeb(deviceName):
     # validate device
     userID = get_jwt_identity()
     header = get_jwt()
@@ -188,14 +188,15 @@ def getTimestampLatestHistoryWeb(deviceID):
     
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     sql = """
-        SELECT * FROM devices
-        WHERE id = %s AND user_id = %s
+        SELECT id FROM devices
+        WHERE device_name = %s AND user_id = %s
     """
-    sql_where = (deviceID, userID)
+    sql_where = (deviceName, userID)
     cursor.execute(sql, sql_where)
     row = cursor.fetchone()
     if row == None:
         return response_errors.DeviceNotExists()
+    deviceID = row[0]
     # get latest timestamp
     sql = """
         SELECT wh.created_at FROM devices d
