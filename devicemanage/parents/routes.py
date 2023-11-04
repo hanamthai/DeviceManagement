@@ -589,8 +589,8 @@ def editChildInfo(childID):
     return response_errors.Success()
 
 # send email to reset password
-def sendEmail(userid,_email):
-    token = create_access_token(identity=userid,expires_delta=timedelta(minutes=5))
+def sendEmail(userID,_email):
+    token = create_access_token(identity=userID,expires_delta=timedelta(minutes=5))
     html_content = f""" 
     <!DOCTYPE html>
     <html>
@@ -605,19 +605,19 @@ def sendEmail(userid,_email):
           #email{{margin:auto;width:600px;background-color:#fff}}
         </style>
     </head>
-    <body bgcolor="#F5F8FA" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
+    <body bgcolor="#1795e6" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
     <div id="email">
         <table role="presentation" width="100%">
             <tr>
                 <td bgcolor="#F6AC31" align="center" style="color: white;">
-                    <h1> Ứng Dụng<br> Đặt Đồ Uống!</h1>
+                    <h1> Ứng Dụng<br> Quản Lý Thiết Bị!</h1>
                 </td>
         </table>
         <table role="presentation" border="0" cellpadding="0" cellspacing="10px" style="padding: 30px 30px 30px 60px;">
             <tr>
                 <td>
                     <h2>
-                        Để đặt lại mật khẩu trong ứng dụng đặt đồ uống online. Hãy nhấn vào link dưới đây:
+                        Để đặt lại mật khẩu trong ứng dụng quản lý thiết bị online. Hãy nhấn vào link dưới đây (hiệu lực trong 5 phút kể từ khi nhận được mail):
                         <a href={url_for("parents.verifyTokenEmail",jwt=token,_external=True)}>
                             <br>Bấm vào đây!
                         </a>
@@ -635,8 +635,8 @@ def sendEmail(userid,_email):
     msg = Message('YÊU CẦU ĐẶT LẠI MẬT KHẨU', sender='noreply@gmail.com', recipients=[_email], html=html_content)
     mail.send(msg)
 
-#{{HOST}}/v1/parents/resetPassword?email=<Your email>
-@parents.route('/v1/parents/resetPassword',methods = ['POST'])
+#{{HOST}}/v1/resetPassword?email=<Your email>
+@parents.route('/v1/resetPassword',methods = ['POST'])
 def resetPassword():
     _email = request.args.get('email')
     
@@ -663,11 +663,11 @@ def resetPassword():
 
 
 #{{HOST}}/resetPassword/token?jwt=<Your token>
-@parents.route('/resetPassword/token',methods=['PUT','GET'])
+@parents.route('/v1/resetPassword/token',methods=['PUT','GET'])
 @jwt_required(locations="query_string")
 def verifyTokenEmail():
-    userid = get_jwt_identity()
-    if userid:
+    userID = get_jwt_identity()
+    if userID:
         # hash password '123'
         _password = '123'
         hashed = bcrypt.hashpw(_password.encode('utf-8'), bcrypt.gensalt())
@@ -678,9 +678,9 @@ def verifyTokenEmail():
         sql_change_password_default = """
         UPDATE users
         SET password = %s
-        WHERE userid = %s
+        WHERE id = %s
         """
-        sql_where = (_password_hash,userid)
+        sql_where = (_password_hash,userID)
         cursor.execute(sql_change_password_default,sql_where)
         conn.commit()
         cursor.close()
