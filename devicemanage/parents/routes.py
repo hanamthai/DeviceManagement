@@ -605,11 +605,11 @@ def sendEmail(userID,_email):
           #email{{margin:auto;width:600px;background-color:#fff}}
         </style>
     </head>
-    <body bgcolor="#1795e6" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
+    <body bgcolor="#F5F8FA" style="width: 100%; font-family: "Helvetica Neue", Helvetica, sans-serif; font-size:18px;">
     <div id="email">
         <table role="presentation" width="100%">
             <tr>
-                <td bgcolor="#F6AC31" align="center" style="color: white;">
+                <td bgcolor="#1795e6" align="center" style="color: white;">
                     <h1> Ứng Dụng<br> Quản Lý Thiết Bị!</h1>
                 </td>
         </table>
