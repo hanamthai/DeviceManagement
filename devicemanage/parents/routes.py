@@ -1,4 +1,4 @@
-from flask import jsonify, request, session, url_for, Blueprint
+from flask import jsonify, request, session, url_for, Blueprint, render_template
 import bcrypt
 from flask_mail import Message
 from datetime import datetime, timedelta
@@ -684,10 +684,7 @@ def verifyTokenEmail():
         cursor.execute(sql_change_password_default,sql_where)
         conn.commit()
         cursor.close()
-
-        resp = jsonify({"message":"Your password changed to '123'!!!"})
-        resp.status_code = 200
-        return resp
+        return render_template('forgotPassword.html')
     else:
         resp = jsonify({"message":"Not Found - Account doesn't exists"})
         resp.status_code = 404
