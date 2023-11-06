@@ -37,8 +37,6 @@ jobs:
             * \
             devicemanage \
             devicemanage/templates \
-            devicemanage/template \
-            template \
             hanamthai_admin@ssh-hanamthai.alwaysdata.net:/home/hanamthai/service/devicemanage
 
       - name: Request Alwaysdata restart server
