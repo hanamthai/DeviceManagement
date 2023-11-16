@@ -25,8 +25,8 @@ jwt = JWTManager(app)
 
 # configure the app
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=60)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10080) # 7 days
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10080)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=1)
 # send email setup
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
