@@ -230,3 +230,47 @@ def changePassword(userID):
     cursor.close()
     return response_errors.Success()
 
+@admins.route('/v1/admins/change-password',methods=['PUT'])
+@jwt_required()
+def changePasswordAdmin():
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+
+    if roleName != constants.RoleNameAdmin:
+        return response_errors.NotAuthenticateParent()
+
+    _json = request.json
+    _oldPassword = _json['oldPassword']
+    _newPassword = _json['newPassword']
+    # Confirm old password
+    cursor = conn.cursor(cursor_factory= psycopg2.extras.DictCursor)
+    sql_get_password = """
+    SELECT password FROM users
+    WHERE id = %s
+    """
+    sql_where = (userID,)
+    cursor.execute(sql_get_password,sql_where)
+    row = cursor.fetchone()
+    password_hash = row[0]
+    if bcrypt.checkpw(_oldPassword.encode('utf-8'),password_hash.encode('utf-8')):
+        # hash password
+        hashed = bcrypt.hashpw(_newPassword.encode('utf-8'),bcrypt.gensalt())
+        _newPassword = hashed.decode('utf-8')
+        
+        sql_change_password = """
+        UPDATE users
+        SET password = %s
+        WHERE id = %s
+        """
+        sql_where = (_newPassword,userID)
+        cursor.execute(sql_change_password,sql_where)
+        conn.commit()
+        cursor.close()
+        resp = jsonify({"message":"Your password changed !!!"})
+        resp.status = 200
+        return resp
+    else:
+        resp = jsonify({"message":"Bad Request - Your old password is wrong"})
+        resp.status_code = 400
+        return resp

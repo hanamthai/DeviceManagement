@@ -16,6 +16,7 @@ from devicemanage import timedelta
 from devicemanage import constants
 from devicemanage import response_errors
 from devicemanage import format_timestamp as ft
+from devicemanage.util import randomNumber
 
 # create an instance of this Blueprint
 parents = Blueprint('parents','__name__')
@@ -668,8 +669,9 @@ def resetPassword():
 def verifyTokenEmail():
     userID = get_jwt_identity()
     if userID:
-        # hash password '123'
-        _password = '123'
+        # generate random password with 5 number
+        _password = randomNumber.Generate5NumberAsString()
+        # hash password
         hashed = bcrypt.hashpw(_password.encode('utf-8'), bcrypt.gensalt())
         _password_hash = hashed.decode('utf-8')
 
@@ -684,7 +686,7 @@ def verifyTokenEmail():
         cursor.execute(sql_change_password_default,sql_where)
         conn.commit()
         cursor.close()
-        return render_template('forgotPassword.html')
+        return render_template('forgotPassword.html', password=_password)
     else:
         resp = jsonify({"message":"Not Found - Account doesn't exists"})
         resp.status_code = 404
