@@ -271,3 +271,32 @@ def getTimestampLatestKeyboardLog(deviceName):
     resp = jsonify({'data': webKitTimestamp})
     resp.status_code = 200
     return resp
+
+@childs.route("/v1/childs/check-register-device/<string:deviceName>", methods=['GET'])
+@jwt_required()
+def checkRegisterDevice(deviceName):
+    # validate device
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+
+    if roleName != constants.RoleNameChild:
+        return response_errors.NotAuthenticateChild()
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = """
+        SELECT id FROM devices
+        WHERE device_name = %s AND user_id = %s
+    """
+    sql_where = (deviceName, userID)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+    cursor.close()
+    if row == None:
+        resp = jsonify({'data': False})
+        resp.status_code = 200
+        return resp
+    else:
+        resp = jsonify({'data': True})
+        resp.status_code = 200
+        return resp
