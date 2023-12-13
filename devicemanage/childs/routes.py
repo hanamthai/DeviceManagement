@@ -136,14 +136,12 @@ def sendKeyboardLog():
     cursor.close()
     return response_errors.Success()
 
-@childs.route('/v1/childs/block-website', methods=['GET'])
+@childs.route('/v1/childs/block-website/<string:deviceName>', methods=['GET'])
 @jwt_required()
-def getBlockedWebsite():
+def getBlockedWebsite(deviceName):
     userID = get_jwt_identity()
     header = get_jwt()
     roleName = header['role_name']
-    _json = request.json
-    _deviceName = _json["deviceName"]
 
     if roleName != constants.RoleNameChild:
         return response_errors.NotAuthenticateChild()
@@ -151,7 +149,7 @@ def getBlockedWebsite():
     # get deviceID
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     sql = "SELECT id FROM devices WHERE user_id = %s AND device_name = %s"
-    sql_where = (userID, _deviceName)
+    sql_where = (userID, deviceName)
     cursor.execute(sql, sql_where)
     row = cursor.fetchone()
 
