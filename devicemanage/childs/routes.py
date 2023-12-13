@@ -160,15 +160,15 @@ def getBlockedWebsite():
 
     deviceID = row[0]
     sql = """
-        SELECT bw.id, bw.url, bw.block_by FROM device_blocked_websites dbw
+        SELECT bw.id, bw.url, bw.block_by, bw.is_active FROM device_blocked_websites dbw
         INNER JOIN blocked_websites bw
         ON dbw.block_website_id = bw.id
-        WHERE dbw.device_id = %s AND bw.is_active = %s
+        WHERE dbw.device_id = %s
     """
-    sql_where = (deviceID,True)
+    sql_where = (deviceID,)
     cursor.execute(sql,sql_where)
     rows = cursor.fetchall()
-    data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by']} for i in rows]
+    data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by'], 'isActive': i['is_active']} for i in rows]
     cursor.close()
     resp = jsonify(data=data)
     resp.status_code = 200

@@ -10,3 +10,4 @@ StatusActive = 'active'
 StatusInactive = 'inactive'
 
 SwitchStatus = {"active": "inactive", "inactive": "active"}
+SwitchStatusBlockWebsites = {True: False, False: True}

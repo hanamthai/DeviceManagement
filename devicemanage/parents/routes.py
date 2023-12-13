@@ -396,7 +396,7 @@ def topKeyboardLog(childID):
     resp.status_code = 200
     return resp
 
-# 1 child have many device so i have to add blocked website in all this device
+# 1 child have many device so i have to add blocked website in all this device (now i don't use it)
 @parents.route('/v1/parents/block-website', methods=['POST'])
 @jwt_required()
 def sendBlockedWebsite():
@@ -449,9 +449,59 @@ def sendBlockedWebsite():
     cursor.close()
     return response_errors.Success()
 
-@parents.route('/v1/parents/block-website/<int:childID>', methods=['GET'])
+@parents.route('/v1/parents/block-website/<int:childID>/<int:deviceID>', methods=['POST'])
 @jwt_required()
-def getBlockWebsite(childID):
+def addBlockWebsite(childID, deviceID):
+    userID = get_jwt_identity()
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    # validate child of parent
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT child_id FROM parent_child_relationships WHERE parent_id = %s AND child_id = %s"
+    sql_where = (userID, childID)
+    cursor.execute(sql,sql_where)
+    row = cursor.fetchone()
+    if row == None:
+        cursor.close()
+        resp = jsonify({'message': "Not exist this child in your network!!"})
+        resp.status_code = 400
+        return resp
+    
+    _json = request.json
+    _blockedWebsites = _json["blockedWebsites"]
+    
+    # get deviceID of child
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id, device_name FROM devices WHERE user_id = %s AND id = %s"
+    sql_where = (childID,deviceID)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+
+    if row == None:
+        resp = jsonify({'message': "Your child device doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+    
+    for i in _blockedWebsites:
+        # insert table blocked_websites
+        sql = "INSERT INTO blocked_websites(url,block_by,is_active) VALUES(%s,%s,%s) RETURNING id"
+        sql_where = (i['url'],userID,True)
+        cursor.execute(sql, sql_where)
+        row = cursor.fetchone()
+        blockWebsiteID = row[0]
+        # insert table device_blocked_websites
+        sql = "INSERT INTO device_blocked_websites(device_id,block_website_id) VALUES(%s,%s)"
+        sql_where = (deviceID, blockWebsiteID)
+        cursor.execute(sql, sql_where)
+        conn.commit()
+    cursor.close()
+    return response_errors.Success()
+
+@parents.route('/v1/parents/block-website/<int:childID>/<int:deviceID>', methods=['GET'])
+@jwt_required()
+def getBlockWebsite(childID, deviceID):
     userID = get_jwt_identity()
     header = get_jwt()
     roleName = header['role_name']
@@ -469,38 +519,61 @@ def getBlockWebsite(childID):
         resp.status_code = 400
         return resp
     
-    # get deviceIDs of child
+    # get deviceID of child
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    sql = "SELECT id, device_name FROM devices WHERE user_id = %s"
-    sql_where = (childID,)
+    sql = "SELECT id, device_name FROM devices WHERE user_id = %s AND id = %s"
+    sql_where = (childID,deviceID)
     cursor.execute(sql, sql_where)
-    rows = cursor.fetchall()
+    row = cursor.fetchone()
 
-    if rows == []:
+    if row == None:
         resp = jsonify({'message': "Your child device doesn't exists in system!!"})
         resp.status_code = 400
         return resp
     
-    output = dict()
-    for row in rows:
-        deviceID = row['id']
-        deviceName = row['device_name']
-        sql = """
-            SELECT bw.id, bw.url, bw.block_by, bw.is_active FROM device_blocked_websites dbw
-            INNER JOIN blocked_websites bw
-            ON dbw.block_website_id = bw.id
-            WHERE dbw.device_id = %s
-        """
-        sql_where = (deviceID,)
-        cursor.execute(sql,sql_where)
-        rows = cursor.fetchall()
-        data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by'], 'isActive': i['is_active']} for i in rows]
-        output[deviceName] = data
-    resp = jsonify(data=output)
+    sql = """
+        SELECT bw.id, bw.url, bw.block_by, bw.is_active FROM device_blocked_websites dbw
+        INNER JOIN blocked_websites bw
+        ON dbw.block_website_id = bw.id
+        WHERE dbw.device_id = %s
+    """
+    sql_where = (deviceID,)
+    cursor.execute(sql,sql_where)
+    rows = cursor.fetchall()
+    data = [{'id': i['id'], 'url': i['url'], 'blockBy': i['block_by'], 'isActive': i['is_active']} for i in rows]
+    resp = jsonify(data=data)
     cursor.close()
     resp.status_code = 200
     return resp
 
+@parents.route('/v1/parents/block-website/status/<int:blockWebsiteID>', methods=['POST'])
+@jwt_required()
+def statusBlockWebsite(blockWebsiteID):
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    
+    # check blockWebsiteID exists
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id, is_active FROM blocked_websites WHERE id = %s"
+    sql_where = (blockWebsiteID,)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+
+    switchStatus = constants.SwitchStatusBlockWebsites[row['is_active']]    
+    if row == None:
+        resp = jsonify({'message': "URL doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+    
+    # insert table blocked_websites
+    sql = "UPDATE blocked_websites SET is_active = %s WHERE id = %s"
+    sql_where = (switchStatus, blockWebsiteID)
+    cursor.execute(sql, sql_where)
+    conn.commit()
+    cursor.close()
+    return response_errors.Success()
 
 @parents.route('/v1/parents/block/<int:childID>', methods=['POST'])
 @jwt_required()
