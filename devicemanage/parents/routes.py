@@ -575,6 +575,39 @@ def statusBlockWebsite(blockWebsiteID):
     cursor.close()
     return response_errors.Success()
 
+@parents.route('/v1/parents/block-website/update/<int:blockWebsiteID>', methods=['POST'])
+@jwt_required()
+def updateBlockWebsite(blockWebsiteID):
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    
+    # check blockWebsiteID exists
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id FROM blocked_websites WHERE id = %s"
+    sql_where = (blockWebsiteID,)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+    
+    if row == None:
+        resp = jsonify({'message': "URL doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+    
+    _json = request.json
+    _url = _json['url']
+    if _url == "":
+        cursor.close()
+        return response_errors.Success()
+    sql = "UPDATE blocked_websites SET url = %s WHERE id = %s"
+    sql_where = (_url, blockWebsiteID)
+    cursor.execute(sql,sql_where)
+    conn.commit()
+    cursor.close()
+    return response_errors.Success()
+
+
 @parents.route('/v1/parents/block/<int:childID>', methods=['POST'])
 @jwt_required()
 def blockUser(childID):
