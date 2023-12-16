@@ -608,6 +608,42 @@ def updateBlockWebsite(blockWebsiteID):
     return response_errors.Success()
 
 
+@parents.route('/v1/parents/block-website/delete/<int:blockWebsiteID>', methods=['POST'])
+@jwt_required()
+def deleteBlockWebsite(blockWebsiteID):
+    header = get_jwt()
+    roleName = header['role_name']
+    if roleName != constants.RoleNameParent:
+        return response_errors.NotAuthenticateParent()
+    
+    # check blockWebsiteID exists
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    sql = "SELECT id FROM blocked_websites WHERE id = %s"
+    sql_where = (blockWebsiteID,)
+    cursor.execute(sql, sql_where)
+    row = cursor.fetchone()
+    
+    if row == None:
+        resp = jsonify({'message': "URL doesn't exists in system!!"})
+        resp.status_code = 400
+        return resp
+    
+    sql = """
+        DELETE FROM device_blocked_websites
+        WHERE block_website_id = %s
+    """
+    sql_where = (blockWebsiteID,)
+    cursor.execute(sql, sql_where)
+    
+    sql = """
+        DELETE FROM blocked_websites
+        WHERE id = %s
+    """
+    sql_where = (blockWebsiteID,)
+    cursor.execute(sql, sql_where)
+
+    return response_errors.Success()
+
 @parents.route('/v1/parents/block/<int:childID>', methods=['POST'])
 @jwt_required()
 def blockUser(childID):
