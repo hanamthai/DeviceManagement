@@ -1,8 +1,8 @@
-# OrderDrinkByApp :tropical_drink:
+# DeviceManageSystem :computer:
 
 ## :one: Introduction:
-### :memo: Project name: Order drink by app mobile
-### :dart: Goals: This application can help customers order drinks without leaving the house and it also helps store owners increase sales by selling online.
+### :memo: Project name: Device management system
+### :dart: Goals: This application can help parents manage their children's devices.
 
 ## :two: Installation Guide: :file_folder:
 - Step 1: Clone this project in local computer
@@ -25,7 +25,7 @@ python run.py
 - Show all drink
 - Show drink detail
 - Reset password by email
-### :boy: Users route: Feature of users
+### :boy: Users route: Feature of users (parents)
 - Show user information
 - Change user information
 - Change password
@@ -45,6 +45,7 @@ python run.py
 - Show all order history (order status are 'Completed' and 'Cancelled')
 - Show all order current (order status are 'Preparing' and 'Delivering')
 - Show revenue statistics by day, month or year
+### :boy: Children route: Feature of children
 
 ## :five: Technologies and Libraries Used: :books:
 ### Framework: Flask
